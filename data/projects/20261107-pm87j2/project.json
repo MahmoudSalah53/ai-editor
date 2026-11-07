@@ -4,7 +4,7 @@
  "template": "kids",
  "channelName": "عَرَفْتَ فَالْزَمْ",
  "createdAt": "2026-11-07T15:52:05.037Z",
- "updatedAt": "2026-11-07T23:49:05.761Z",
+ "updatedAt": "2026-11-07T23:50:36.003Z",
  "timing": {
   "intro": 3.5,
   "hold": 0.5,
@@ -55,32 +55,19 @@
      "text": "وَأَحْسِنُوا وَأَحْسِنُوا إِنَّ",
      "start": 7.26,
      "end": 9.8,
-     "pose": "heart",
-     "scene": {
-      "icon": "icon_heart_glow",
-      "label": "قلب منير"
-     }
+     "pose": "heart"
     },
     {
      "id": "y0slcwnf",
      "text": "اللَّهَ يُحِبُّ الْمُحْسِنِينَ",
      "start": 9.8,
-     "end": 12.04,
-     "scene": {
-      "icon": "same",
-      "label": ""
-     }
+     "end": 12.04
     },
     {
      "id": "acaidi77",
      "text": "رَوَى الطَّبَرِيُّ عَنْ عِكْرِيمَةَ",
      "start": 12.04,
-     "end": 13.78,
-     "pose": "book",
-     "scene": {
-      "icon": "same",
-      "label": ""
-     }
+     "end": 13.78
     }
    ]
   },
@@ -92,21 +79,14 @@
      "text": "فِي تَفْسِيرِهَا قَالَ أَحْسِنُوا",
      "start": 13.78,
      "end": 17.72,
-     "scene": {
-      "icon": "icon_finger_up",
-      "label": "إصبع الْتوحيد"
-     }
+     "pose": "present"
     },
     {
      "id": "f1b9pbne",
      "text": "الظَّنَّ بِاللَّهِ يَبَرَّكُمْ",
      "start": 17.72,
      "end": 20.82,
-     "pose": "heart",
-     "scene": {
-      "icon": "same",
-      "label": ""
-     }
+     "accent": true
     }
    ]
   }
