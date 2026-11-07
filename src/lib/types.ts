@@ -60,6 +60,7 @@ export interface RenderState {
 export interface Asset {
   id: string;
   name: string;
+  description?: string;   // semantic description / keywords for the AI Director
   file: string;           // file name inside data/assets/icons
   createdAt: string;
 }

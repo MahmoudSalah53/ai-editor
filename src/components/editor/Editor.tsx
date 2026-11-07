@@ -180,6 +180,7 @@ export function Editor({ initial, initialAssets }: { initial: EditorData; initia
             ) : null}
             {tab === "cards" || tab === "preview" ? (
               <CardsTab
+                projectId={project.id}
                 cards={project.cards}
                 words={words}
                 audioDuration={project.audio?.duration ?? 0}
@@ -188,6 +189,7 @@ export function Editor({ initial, initialAssets }: { initial: EditorData; initia
                 activeLineId={activeLineId}
                 onChange={setCards}
                 onAssets={a => setAssets(cur => [...cur, ...a])}
+                onReplaceAssets={setAssets}
                 playAt={playAt}
                 voiceTime={player.voiceTime}
                 goToText={() => setTab("text")}

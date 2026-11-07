@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { ImagePlus, Search } from "lucide-react";
 import { Button, Input, Modal, api, cx } from "@/components/ui";
 
-export interface AssetItem { id: string; name: string; url: string }
+export interface AssetItem { id: string; name: string; description?: string; url: string }
 
 export function IconPicker({ open, onClose, assets, value, onPick, onUploaded }: {
   open: boolean; onClose: () => void; assets: AssetItem[]; value?: string; onPick: (id: string) => void; onUploaded: (a: AssetItem[]) => void;

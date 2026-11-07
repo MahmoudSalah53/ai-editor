@@ -19,6 +19,15 @@ const SEED_ICONS: Record<string, string> = {
   icon_all_good: "كل الخير",
 };
 
+export const SEED_DESCRIPTIONS: Record<string, string> = {
+  icon_book: "عند ذكر رواية الحديث، المصنف، الكتاب، الراوي، التفسير، القرآن، العلم، قال الطبري أو ابن أبي شيبة",
+  icon_finger_up: "عند ذكر الله تعالى، القسم بالله (والذي لا إله غيره)، التوحيد، العقيدة، قال الله تعالى",
+  icon_gift_heart: "عند ذكر العطاء، ما أعطي عبد، النعمة، الفضل، الإحسان، الإنفاق في سبيل الله، الصدقة",
+  icon_heart_glow: "عند ذكر حسن الظن بالله، القلب، الإيمان، المحبة، إن الله يحب المحسنين، اليقين",
+  icon_hands_receive: "عند ذكر الدعاء، الاستجابة، إلا أعطاه الله ذلك، الرجاء، الطلب من الله",
+  icon_all_good: "عند ذكر أن كل الخير بيد الله، البركة، الفلاح، النعيم، يبركم، عاقبة الإحسان",
+};
+
 let ready = false;
 function ensure() {
   if (ready) return;
@@ -31,7 +40,7 @@ function ensure() {
       for (const f of readdirSync(seedDir)) {
         const id = path.parse(f).name;
         copyFileSync(path.join(seedDir, f), path.join(ASSETS_DIR, f));
-        assets.push({ id, name: SEED_ICONS[id] ?? id, file: f, createdAt: new Date().toISOString() });
+        assets.push({ id, name: SEED_ICONS[id] ?? id, description: SEED_DESCRIPTIONS[id], file: f, createdAt: new Date().toISOString() });
       }
     }
     writeFileSync(index, JSON.stringify(assets, null, 1));
@@ -125,20 +134,39 @@ export const setEnv = (id: string, env: number[]) => writeJson(path.join(project
 const assetsIndex = () => path.join(ASSETS_DIR, "assets.json");
 export async function listAssets(): Promise<Asset[]> {
   ensure();
-  return readJson<Asset[]>(assetsIndex(), []);
+  const list = await readJson<Asset[]>(assetsIndex(), []);
+  return list.map(a => ({
+    ...a,
+    description: a.description ?? SEED_DESCRIPTIONS[a.id],
+  }));
 }
-export async function addAsset(name: string, data: Buffer, ext: string): Promise<Asset> {
+export async function saveAssets(assets: Asset[]) {
+  ensure();
+  await writeJson(assetsIndex(), assets);
+}
+export async function addAsset(name: string, data: Buffer, ext: string, description?: string): Promise<Asset> {
   const assets = await listAssets();
   const id = `a-${uid()}`;
   const file = `${id}${ext}`;
   await fs.writeFile(path.join(ASSETS_DIR, file), data);
-  const a: Asset = { id, name: name || "صورة", file, createdAt: new Date().toISOString() };
+  const a: Asset = { id, name: name || "صورة", description, file, createdAt: new Date().toISOString() };
   await writeJson(assetsIndex(), [...assets, a]);
   return a;
 }
-export async function updateAsset(id: string, name: string) {
+export async function updateAsset(id: string, patch: { name?: string; description?: string }) {
   const assets = await listAssets();
-  await writeJson(assetsIndex(), assets.map(a => (a.id === id ? { ...a, name } : a)));
+  await writeJson(
+    assetsIndex(),
+    assets.map(a =>
+      a.id === id
+        ? {
+            ...a,
+            ...(patch.name !== undefined ? { name: patch.name } : {}),
+            ...(patch.description !== undefined ? { description: patch.description } : {}),
+          }
+        : a
+    )
+  );
 }
 export async function deleteAsset(id: string) {
   const assets = await listAssets();

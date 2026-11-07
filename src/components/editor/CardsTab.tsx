@@ -25,7 +25,7 @@ import type { Card, Line, PoseId, TemplateId, TimedWord } from "@/lib/types";
 import { POSES } from "@/lib/types";
 import { autoAssignPoses, realignCards, uid, vocalizeCards } from "@/lib/compile";
 import { hasTashkeel, vocalizeText } from "@/lib/tashkeel";
-import { Button, EmptyState, Input, cx } from "@/components/ui";
+import { Button, EmptyState, Input, api, cx } from "@/components/ui";
 import { IconPicker, type AssetItem } from "./IconPicker";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -50,6 +50,7 @@ const HARAKAT: Array<{ char: string; label: string; display: string }> = [
 ];
 
 interface Props {
+  projectId: string;
   cards: Card[];
   words: TimedWord[];
   audioDuration: number;
@@ -58,15 +59,38 @@ interface Props {
   activeLineId: string | null;
   onChange: (cards: Card[]) => void;
   onAssets: (a: AssetItem[]) => void;
+  onReplaceAssets: (a: AssetItem[]) => void;
   playAt: (voiceTime: number) => void;
   voiceTime: () => number;
   goToText: () => void;
 }
 
-export function CardsTab({ cards, words, audioDuration, template, assets, activeLineId, onChange, onAssets, playAt, voiceTime, goToText }: Props) {
+export function CardsTab({ projectId, cards, words, audioDuration, template, assets, activeLineId, onChange, onAssets, onReplaceAssets, playAt, voiceTime, goToText }: Props) {
   const [picker, setPicker] = useState<{ ci: number; li: number } | null>(null);
   const [showHarakat, setShowHarakat] = useState(false);
+  const [aiDirecting, setAiDirecting] = useState(false);
+  const [aiDoneMsg, setAiDoneMsg] = useState<string | null>(null);
   const lastFocusedInput = useRef<{ el: HTMLInputElement; ci: number; li: number } | null>(null);
+
+  async function runAiDirector() {
+    setAiDirecting(true);
+    setAiDoneMsg(null);
+    try {
+      const res = await api<{ cards: Card[]; assets: AssetItem[]; source: string }>(`/api/projects/${projectId}/ai-direct`, {
+        method: "POST",
+        body: JSON.stringify({ cards }),
+      });
+      if (res.assets?.length) onReplaceAssets(res.assets);
+      if (res.cards?.length) onChange(res.cards);
+      setAiDoneMsg("تم توزيع الرسومات وحركات اليد بالـ AI بنجاح!");
+      setTimeout(() => setAiDoneMsg(null), 4000);
+    } catch {
+      // Fallback to local pose assignment if request fails
+      onChange(autoAssignPoses(cards));
+    } finally {
+      setAiDirecting(false);
+    }
+  }
 
   const setCard = (ci: number, patch: Partial<Card>) => onChange(cards.map((c, i) => (i === ci ? { ...c, ...patch } : c)));
   const setLine = (ci: number, li: number, patch: Partial<Line>) => {
@@ -152,6 +176,18 @@ export function CardsTab({ cards, words, audioDuration, template, assets, active
       <div className="rounded-xl border border-stone-200 bg-white p-3 shadow-2xs">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
+            {kids && (
+              <Button
+                size="sm"
+                variant="primary"
+                loading={aiDirecting}
+                onClick={runAiDirector}
+                title="يقرأ الذكاء الاصطناعي نص كل سطر ويختار أنسب رسمة توضيحية من مكتبتك (أو نفس السابقة أو بدون رسمة) مع حركة اليد المناسبة تلقائياً"
+              >
+                <Sparkles className="size-3.5" />
+                {aiDirecting ? "جارٍ التوزيع الذكي بالـ AI…" : "تنظيم الرسومات والحركات بالـ AI"}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="secondary"
@@ -172,17 +208,6 @@ export function CardsTab({ cards, words, audioDuration, template, assets, active
                 ضبط التوقيت مع الصوت
               </Button>
             )}
-            {kids && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => onChange(autoAssignPoses(cards.map(c => ({ ...c, lines: c.lines.map(l => ({ ...l, pose: undefined })) }))))}
-                title="توزيع حركات اليد للشخصية تلقائياً حسب معنى كل سطر"
-              >
-                <Sparkles className="size-3.5 text-accent" />
-                توزيع حركات اليد تلقائياً
-              </Button>
-            )}
           </div>
 
           <button
@@ -199,6 +224,13 @@ export function CardsTab({ cards, words, audioDuration, template, assets, active
             <ChevronDown className={cx("size-3.5 transition-transform", showHarakat && "rotate-180")} />
           </button>
         </div>
+
+        {aiDoneMsg && (
+          <div className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800">
+            <Sparkles className="size-3.5 text-emerald-600" />
+            <span>{aiDoneMsg}</span>
+          </div>
+        )}
 
         {showHarakat && (
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-stone-100 pt-2.5">

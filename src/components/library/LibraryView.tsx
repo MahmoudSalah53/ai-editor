@@ -68,14 +68,28 @@ export function LibraryView({ initialAssets }: { initialAssets: AssetItem[] }) {
   const [q, setQ] = useState("");
   const [autoCutout, setAutoCutout] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [describing, setDescribing] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(
-    () => assets.filter(a => !q.trim() || a.name.includes(q.trim()) || a.id.includes(q.trim())),
+    () => assets.filter(a => !q.trim() || a.name.includes(q.trim()) || (a.description ?? "").includes(q.trim()) || a.id.includes(q.trim())),
     [assets, q]
   );
+
+  async function autoDescribeAll() {
+    setDescribing(true);
+    setError(null);
+    try {
+      const updated = await api<AssetItem[]>("/api/assets/auto-describe", { method: "POST" });
+      setAssets(updated);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setDescribing(false);
+    }
+  }
 
   async function handleUpload(files: FileList | null) {
     if (!files?.length) return;
@@ -97,12 +111,10 @@ export function LibraryView({ initialAssets }: { initialAssets: AssetItem[] }) {
     }
   }
 
-  async function rename(id: string, name: string) {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setAssets(prev => prev.map(a => (a.id === id ? { ...a, name: trimmed } : a)));
+  async function saveMeta(id: string, patch: { name?: string; description?: string }) {
+    setAssets(prev => prev.map(a => (a.id === id ? { ...a, ...patch } : a)));
     try {
-      await api(`/api/assets/${id}`, { method: "PATCH", body: JSON.stringify({ name: trimmed }) });
+      await api(`/api/assets/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
       setSavedId(id);
       setTimeout(() => setSavedId(cur => (cur === id ? null : cur)), 1500);
     } catch (e) {
@@ -133,6 +145,10 @@ export function LibraryView({ initialAssets }: { initialAssets: AssetItem[] }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <Button variant="secondary" onClick={autoDescribeAll} loading={describing} title="إعطاء أسماء وأوصاف عربية تلقائياً للرسومات ليتمكن الذكاء الاصطناعي من اختيارها">
+            <Sparkles className="size-4 text-accent" />
+            تسمية ووصف للـ AI تلقائياً
+          </Button>
           <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-medium text-stone-700 select-none">
             <input
               type="checkbox"
@@ -170,7 +186,7 @@ export function LibraryView({ initialAssets }: { initialAssets: AssetItem[] }) {
           <Input
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="ابحث باسم الرسمة..."
+            placeholder="ابحث باسم الرسمة أو وصفها..."
             className="ps-9"
           />
         </div>
@@ -182,7 +198,7 @@ export function LibraryView({ initialAssets }: { initialAssets: AssetItem[] }) {
           <p className="mt-1 text-sm text-stone-500">ارفع صوراً بصيغة PNG أو JPG أو WEBP لإضافتها إلى المكتبة.</p>
         </div>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filtered.map(a => (
             <li
               key={a.id}
@@ -204,23 +220,39 @@ export function LibraryView({ initialAssets }: { initialAssets: AssetItem[] }) {
                   <Trash2 className="size-3.5" />
                 </button>
               </div>
-              <div className="flex items-center gap-1.5 border-t border-line px-2.5 py-2">
-                <input
-                  defaultValue={a.name}
+              <div className="flex flex-col gap-1.5 border-t border-line p-2.5">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    key={`name-${a.id}-${a.name}`}
+                    defaultValue={a.name}
+                    placeholder="اسم الرسمة"
+                    onBlur={e => {
+                      if (e.target.value.trim() && e.target.value.trim() !== a.name) {
+                        saveMeta(a.id, { name: e.target.value.trim() });
+                      }
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    }}
+                    className={cx(
+                      "min-w-0 flex-1 rounded-md px-1.5 py-1 text-xs font-bold text-stone-800 transition",
+                      "hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
+                    )}
+                  />
+                  {savedId === a.id && <Check className="size-3.5 shrink-0 text-emerald-600" />}
+                </div>
+                <textarea
+                  key={`desc-${a.id}-${a.description ?? ""}`}
+                  defaultValue={a.description ?? ""}
+                  rows={2}
+                  placeholder="وصف للـ AI: متى يختار هذه الرسمة؟ (مثال: عند ذكر الصدقة، المال، الإنفاق)"
                   onBlur={e => {
-                    if (e.target.value.trim() && e.target.value.trim() !== a.name) {
-                      rename(a.id, e.target.value);
+                    if (e.target.value.trim() !== (a.description ?? "")) {
+                      saveMeta(a.id, { description: e.target.value.trim() });
                     }
                   }}
-                  onKeyDown={e => {
-                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                  }}
-                  className={cx(
-                    "min-w-0 flex-1 rounded-md px-1.5 py-1 text-xs font-medium text-stone-800 transition",
-                    "hover:bg-stone-100 focus:bg-stone-100 focus:outline-none"
-                  )}
+                  className="w-full resize-none rounded-lg border border-stone-200/80 bg-stone-50/70 px-2 py-1 text-[11px] leading-relaxed text-stone-600 placeholder:text-stone-400 focus:border-accent focus:bg-white focus:outline-none"
                 />
-                {savedId === a.id && <Check className="size-3.5 shrink-0 text-emerald-600" />}
               </div>
             </li>
           ))}
