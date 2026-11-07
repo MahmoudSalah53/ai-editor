@@ -13,7 +13,6 @@ const VALID_POSES = new Set<string>(["present", "point_up", "book", "heart"]);
 function needsBetterName(name: string): boolean {
   const t = name.trim();
   if (!t || t === "صورة" || /^a-[a-z0-9]+$/i.test(t) || /^[0-9_-]+$/.test(t)) return true;
-  // If it has no Arabic letters at all (pure English filename like "heart_icon")
   if (!/[\u0600-\u06FF]/.test(t)) return true;
   return false;
 }
@@ -90,7 +89,7 @@ export async function autoDescribeAssets(assets: Asset[]): Promise<{ assets: Ass
 }
 
 /**
- * Semantic fallback matcher: scores a line of Arabic text against all available library assets
+ * Semantic fallback matcher: scores a piece of Arabic text against all available library assets
  * using their Arabic names and descriptions.
  */
 function matchBestAssetLocally(text: string, assets: Asset[]): { asset: Asset; score: number } | null {
@@ -128,8 +127,8 @@ interface AiLineDecision {
 }
 
 /**
- * Uses Free Cloud AI (plus semantic validation) to automatically organize
- * character hand poses, illustrations/emojis, "same as previous", and labels across all lines.
+ * Uses Free Cloud AI + Pacing Guardrails to organize character hand poses and illustrations
+ * in a calm, human-paced way (never switching icons or poses every single line!).
  */
 export async function aiDirectProject(cards: Card[], assets: Asset[]): Promise<{ cards: Card[]; source: "cloud-ai" | "local-smart" }> {
   const flatLines = cards.flatMap(c => c.lines);
@@ -146,36 +145,40 @@ export async function aiDirectProject(cards: Card[], assets: Asset[]): Promise<{
       whenToUse: a.description || a.name,
     }));
 
-    const lineList = flatLines.map((l, idx) => ({
-      i: l.id,
-      idx: idx + 1,
-      text: l.text,
+    const cardStructure = cards.map((c, ci) => ({
+      cardNumber: ci + 1,
+      lines: c.lines.map(l => ({
+        i: l.id,
+        durationSec: Math.round((l.end - l.start) * 10) / 10,
+        text: l.text,
+      })),
     }));
 
     const prompt = [
-      "أنت مخرج فني ذكي لمقاطع الريلز الإسلامية والتربوية القصيرة.",
-      "مهمتك توزيع (حركة يد الشخصية) و(الرسمة التوضيحية/الإيموجي) لكل سطر من أسطر الفيديو بذكاء وتناسق بصري.",
+      "أنت مخرج فني محترف وهادئ لمقاطع الريلز الإسلامية والتربوية.",
+      "قاعدة إخراجية ذهبية ومهمة جداً: يمنع منعاً باتاً تغيير الرسمة أو حركة اليد في كل سطر لأن ذلك يشتت المشاهد ويجعل الفيديو مزدحماً وسريعاً بشكل مزعج!",
+      "",
+      "التزم بقواعد الإيقاع الهادئ التالية:",
+      "1. الشريحة الواحدة (card) تحتوي على عدة أسطر مترابطة في المعنى: اختر رسمة واحدة فقط في بداية الفكرة (s: 'icon')، ثم في الأسطر التالية المكملة لنفس الجملة أو الآية اجعلها حتماً (s: 'same') لتبقى الرسمة ثابتة على الشاشة لمدة كافية (4 إلى 6 ثوانٍ).",
+      "2. لا تضع رسمة في كل شريحة بالقوة؛ إذا كانت الجملة تمهيدية أو لا تطابق أي رسمة بوضوح فاجعلها بدون رسمة (s: 'none'). في الفيديو الكامل يكفي ظهور 2 إلى 4 رسومات فقط في اللحظات المؤثرة.",
+      "3. حركة اليد (p): لا تغير حركة اليد في كل سطر! اختر حركة يد في بداية الشريحة أو المعنى، واجعل الأسطر التي تليها (p: 'same') حتى ينتقل الكلام لمعنى جديد تماماً.",
+      "4. التمييز اللوني (acc): اجعله true فقط في سطر واحد أو سطرين على الأكثر في الفيديو كله (خاتمة الحديث أو موضع الشاهد الرئيسي)، والباقي false.",
       "",
       "حركات اليد المتاحة (p):",
-      "- point_up: يشير بإصبعه لأعلى (عند ذكر الله تعالى، قال الله، القسم بالله، التوحيد)",
-      "- book: يمسك كتاباً (عند ذكر الراوي، رواه، مصنف، الطبري، البخاري، في تفسيرها)",
-      "- heart: يضع يده على قلبه (عند ذكر المحبة، الإحسان، يحب المحسنين، حسن الظن بالله، القلب، الإيمان)",
-      "- present: يشرح بيده (للشرح العام، الأمر بالإنفاق، العطاء، بداية الكلام)",
-      "- same: استمرار نفس حركة اليد من السطر السابق إذا كان السطر مكملاً لنفس الجملة",
+      "- point_up: يشير لأعلى (عند ذكر الله تعالى، قال الله، القسم بالله)",
+      "- book: يمسك كتاباً (عند ذكر الراوي، رواه، مصنف، الطبري، في تفسيرها)",
+      "- heart: يده على قلبه (عند ذكر المحبة، الإحسان، يحب المحسنين، حسن الظن بالله)",
+      "- present: يشرح بيده (للشرح العام والعطاء)",
+      "- same: استمرار نفس حركة اليد السابقة (استخدمها في أغلب الأسطر المتتالية)",
       "",
-      "حالات الرسمة التوضيحية (s):",
-      "- icon: إظهار رسمة جديدة من القائمة المتاحة أدناه (حدد معرفها في ic وعنواناً عربياً قصيراً من كلمتين أو 3 في lbl)",
-      "- same: استمرار ظهور نفس الرسمة من السطر السابق (استخدمها عندما يكون السطر تكملة لنفس المعنى أو الآية من السطر السابق حتى لا تختفي الرسمة بسرعة)",
-      "- none: بدون رسمة (تختفي الرسمة السابقة إذا كان السطر لا يناسبه أي رسمة أو انتقل لمعنى تمهيدي)",
-      "",
-      "قائمة الرسومات المتاحة في المكتبة (اختر فقط من هذه الـ id):",
+      "قائمة الرسومات المتاحة في المكتبة (اختر فقط من هذه الـ id عند وجود تطابق قوي):",
       JSON.stringify(iconCatalog),
       "",
-      "الأسطر المطلوب إخراجها بالترتيب:",
-      JSON.stringify(lineList),
+      "شرائح وأسطر الفيديو:",
+      JSON.stringify(cardStructure),
       "",
-      'أرجع JSON فقط يحتوي على المفتاح "lines" كقائمة عناصر بهذا الشكل الدقيق:',
-      '{"lines":[{"i":"معرف السطر","p":"point_up|book|heart|present|same","s":"icon|same|none","ic":"معرف الرسمة أو فارغ","lbl":"عنوان مختصر للرسمة أو فارغ","acc":true}]}',
+      'أرجع JSON فقط يحتوي على المفتاح "lines" لكل الأسطر بالترتيب:',
+      '{"lines":[{"i":"معرف السطر","p":"point_up|book|heart|present|same","s":"icon|same|none","ic":"معرف الرسمة أو فارغ","lbl":"عنوان مختصر للرسمة أو فارغ","acc":false}]}',
     ].join("\n");
 
     const res = await fetch(CLOUD_AI_URL, {
@@ -189,7 +192,7 @@ export async function aiDirectProject(cards: Card[], assets: Asset[]): Promise<{
         reasoning_effort: "low",
         max_tokens: 4000,
         messages: [
-          { role: "system", content: "Output strict JSON only with minimal reasoning." },
+          { role: "system", content: "Output strict JSON only with minimal reasoning. Follow calm pacing rules strictly." },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
@@ -214,82 +217,131 @@ export async function aiDirectProject(cards: Card[], assets: Asset[]): Promise<{
     // Fallback to local smart semantic engine below
   }
 
+  // Post-processing with strict Pacing & Cooldown Guardrails so it NEVER changes every line
+  const MIN_SCENE_HOLD_SEC = 4.2; // An illustration must stay at least ~4.2s (or across its card) before switching to another icon
+  const MIN_POSE_HOLD_SEC = 3.6;  // Character hand pose must stay at least ~3.6s before switching
+
   let prevPose: PoseId | undefined;
+  let lastPoseChangeStart = -99;
   let activeSceneIcon: string | null = null;
+  let lastSceneStart = -99;
+  let lastSceneCardIdx = -1;
+  let totalAccents = 0;
 
-  const nextCards = cards.map((c, ci) => ({
-    ...c,
-    lines: c.lines.map((l, li) => {
-      const isVeryFirst = ci === 0 && li === 0;
-      const d = aiMap.get(l.id);
+  const nextCards = cards.map((c, ci) => {
+    // Also score the whole card text for local fallback so we pick at most 1 best icon per card
+    const cardText = c.lines.map(l => l.text).join(" ");
+    const cardMatch = matchBestAssetLocally(cardText, assets);
+    let cardHasAccent = false;
 
-      // 1. Pose resolution
-      let pose: PoseId | undefined;
-      if (d?.p && VALID_POSES.has(d.p)) {
-        const candidate = d.p as PoseId;
-        pose = !isVeryFirst && candidate === prevPose ? undefined : candidate;
-      } else if (d?.p === "same" && !isVeryFirst) {
-        pose = undefined;
-      } else {
-        pose = inferPose(l.text, li === 0, prevPose) ?? (isVeryFirst ? "present" : undefined);
-      }
-      if (pose) prevPose = pose;
-      else if (isVeryFirst) {
-        pose = "present";
-        prevPose = "present";
-      }
+    return {
+      ...c,
+      lines: c.lines.map((l, li) => {
+        const isVeryFirst = ci === 0 && li === 0;
+        const d = aiMap.get(l.id);
+        const timeSincePoseChange = l.start - lastPoseChangeStart;
+        const timeSinceSceneStart = l.start - lastSceneStart;
 
-      // 2. Scene / Illustration resolution
-      let scene: { icon: string; label: string } | undefined;
-      const localMatch = matchBestAssetLocally(l.text, assets);
+        // 1. Calm Pose Resolution
+        let pose: PoseId | undefined;
+        let desiredPose: PoseId | undefined;
+        if (d?.p && VALID_POSES.has(d.p)) {
+          desiredPose = d.p as PoseId;
+        } else if (!d || d.p !== "same") {
+          desiredPose = inferPose(l.text, li === 0, prevPose);
+        }
 
-      if (d) {
-        if (d.s === "icon" && d.ic && validIconIds.has(d.ic)) {
-          // If same icon as activeSceneIcon and no new label, treat as "same" so it doesn't re-pop
-          if (!isVeryFirst && d.ic === activeSceneIcon && !d.lbl?.trim()) {
+        if (isVeryFirst) {
+          pose = desiredPose ?? "present";
+          prevPose = pose;
+          lastPoseChangeStart = l.start;
+        } else if (
+          desiredPose &&
+          desiredPose !== prevPose &&
+          (li === 0 || timeSincePoseChange >= MIN_POSE_HOLD_SEC)
+        ) {
+          pose = desiredPose;
+          prevPose = pose;
+          lastPoseChangeStart = l.start;
+        } else {
+          // Keep same pose ("نفس السابقة") to avoid rapid hand switching
+          pose = undefined;
+        }
+
+        // 2. Calm Scene / Illustration Resolution
+        let scene: { icon: string; label: string } | undefined;
+
+        if (usedCloud && d) {
+          const wantsNewIcon = d.s === "icon" && d.ic && validIconIds.has(d.ic);
+          const wantsSame = d.s === "same";
+
+          if (wantsNewIcon) {
+            const candidateIcon = d.ic!;
+            // Guardrail: If an icon is already active in this SAME card or started < MIN_SCENE_HOLD_SEC ago,
+            // don't switch to a different icon mid-card — keep the current icon ("same") smoothly!
+            if (
+              activeSceneIcon &&
+              (ci === lastSceneCardIdx || timeSinceSceneStart < MIN_SCENE_HOLD_SEC || candidateIcon === activeSceneIcon)
+            ) {
+              scene = { icon: "same", label: "" };
+            } else {
+              const rawLbl = d.lbl?.trim() || "";
+              scene = { icon: candidateIcon, label: rawLbl ? vocalizeText(rawLbl) : "" };
+              activeSceneIcon = candidateIcon;
+              lastSceneStart = l.start;
+              lastSceneCardIdx = ci;
+            }
+          } else if (wantsSame && activeSceneIcon) {
             scene = { icon: "same", label: "" };
           } else {
-            const rawLbl = d.lbl?.trim() || "";
-            scene = { icon: d.ic, label: rawLbl ? vocalizeText(rawLbl) : "" };
-            activeSceneIcon = d.ic;
+            // d.s === "none":
+            // Guardrail: If an icon just started on the previous line in the SAME card (< 3.5s ago),
+            // don't flash it and hide it mid-card — keep it for this line in the card!
+            if (activeSceneIcon && ci === lastSceneCardIdx && timeSinceSceneStart < 3.5) {
+              scene = { icon: "same", label: "" };
+            } else {
+              scene = undefined;
+              activeSceneIcon = null;
+            }
           }
-        } else if (d.s === "same" && !isVeryFirst && activeSceneIcon) {
-          scene = { icon: "same", label: "" };
-        } else if (d.s === "icon" && (!d.ic || !validIconIds.has(d.ic)) && localMatch) {
-          scene = { icon: localMatch.asset.id, label: vocalizeText(localMatch.asset.name) };
-          activeSceneIcon = localMatch.asset.id;
         } else {
-          scene = undefined;
-          activeSceneIcon = null;
-        }
-      } else {
-        // Pure local semantic fallback
-        if (localMatch && localMatch.score >= 1.5) {
-          if (!isVeryFirst && localMatch.asset.id === activeSceneIcon) {
+          // Local Smart Fallback: at most 1 icon per card, held across the card's lines
+          if (li === 0 && cardMatch && cardMatch.score >= 2) {
+            if (cardMatch.asset.id === activeSceneIcon) {
+              scene = { icon: "same", label: "" };
+            } else {
+              scene = { icon: cardMatch.asset.id, label: vocalizeText(cardMatch.asset.name) };
+              activeSceneIcon = cardMatch.asset.id;
+              lastSceneStart = l.start;
+              lastSceneCardIdx = ci;
+            }
+          } else if (li > 0 && activeSceneIcon && ci === lastSceneCardIdx) {
             scene = { icon: "same", label: "" };
           } else {
-            scene = { icon: localMatch.asset.id, label: vocalizeText(localMatch.asset.name) };
-            activeSceneIcon = localMatch.asset.id;
+            scene = undefined;
+            activeSceneIcon = null;
           }
-        } else if (!isVeryFirst && activeSceneIcon && li > 0 && l.text.trim().length < 28) {
-          // Short continuation line in the same card keeps previous illustration
-          scene = { icon: "same", label: "" };
-        } else {
-          scene = undefined;
-          activeSceneIcon = null;
         }
-      }
 
-      const accent = typeof d?.acc === "boolean" ? (d.acc || undefined) : l.accent;
+        // 3. Calm Accent Resolution (at most 1 per card, max 2 in video)
+        let accent: boolean | undefined;
+        if (d?.acc === true && !cardHasAccent && totalAccents < 2) {
+          accent = true;
+          cardHasAccent = true;
+          totalAccents++;
+        } else {
+          accent = undefined;
+        }
 
-      return {
-        ...l,
-        pose,
-        scene,
-        accent,
-      };
-    }),
-  }));
+        return {
+          ...l,
+          pose,
+          scene,
+          accent,
+        };
+      }),
+    };
+  });
 
   return { cards: nextCards, source: usedCloud ? "cloud-ai" : "local-smart" };
 }
