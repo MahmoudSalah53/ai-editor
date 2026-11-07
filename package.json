@@ -8,7 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
+    "lucide-react": "^1.70.0",
     "next": "16.4.5",
+    "playwright-core": "^1.65.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },

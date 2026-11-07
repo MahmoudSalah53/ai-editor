@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>template: library</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  #stage { background: #04161a; }
+  #main { z-index: 10; }
+  #scene { position: absolute; inset: 0; background: url("pose.jpg") center top / cover; }
+  #lanternGlow { position: absolute; width: 520px; height: 520px; left: 600px; top: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,205,120,.45) 0%, rgba(255,190,90,.12) 40%, rgba(255,180,80,0) 70%); mix-blend-mode: screen; }
+  #shade { position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(2,14,18,.45) 0%, rgba(2,14,18,0) 10%, rgba(2,14,18,0) 64%, rgba(2,14,18,.55) 73%, rgba(2,14,18,.78) 100%),
+      radial-gradient(ellipse 95% 75% at 50% 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,.35) 100%); }
+  #brand { position: absolute; top: 70px; left: 0; right: 0; text-align: center; }
+  #brandName { font-family: "Ruqaa"; font-weight: 700; font-size: 62px; line-height: 1.5; white-space: nowrap;
+    background: linear-gradient(180deg, #fff3cf, #d9ab55); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 3px 8px rgba(0,0,0,.8)); }
+  #brandLine { width: 260px; height: 2px; margin: -4px auto 0; background: linear-gradient(90deg, rgba(217,171,85,0), #d9ab55, rgba(217,171,85,0)); }
+
+  #subsBg { position: absolute; left: -80px; right: -80px; top: 1340px; height: 560px;
+    background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(2,12,16,.62) 0%, rgba(2,12,16,.45) 55%, rgba(2,12,16,0) 100%); }
+  #wave { position: absolute; left: 0; right: 0; top: 1345px; height: 70px; }
+  #subs { position: absolute; left: 60px; right: 60px; top: 1415px; height: 470px; text-align: center; }
+  .card { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: flex-start; }
+  .hdr { font-family: "Amiri"; font-weight: 700; font-size: 54px; line-height: 1.6; color: #f0c96a;
+    text-shadow: 0 3px 12px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.9); margin-bottom: 2px; white-space: nowrap; }
+  .ln { font-family: "Amiri"; font-weight: 700; font-size: 64px; line-height: 1.7; color: #fff;
+    text-shadow: 0 4px 16px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,.95); white-space: nowrap; }
+  .ln.accent { color: #f3d27e; }
+  .ftr { font-family: "Amiri"; font-weight: 700; font-size: 42px; color: #d9b064; margin-top: 18px; white-space: nowrap;
+    text-shadow: 0 3px 10px rgba(0,0,0,.9); }
+  #progress { position: absolute; left: 0; bottom: 0; height: 8px; width: 0;
+    background: linear-gradient(90deg, #8a6424, #f3d27e); box-shadow: 0 0 12px rgba(243,210,126,.7); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="main" class="layer">
+    <div id="scene"><div id="lanternGlow"></div></div>
+    <div id="shade"></div>
+    <canvas id="dust" width="1080" height="1920"></canvas>
+    <div id="brand"><div id="brandName"></div><div id="brandLine"></div></div>
+    <div id="subsBg"></div>
+    <canvas id="wave" width="1080" height="70"></canvas>
+    <div id="subs"></div>
+    <div id="progress"></div>
+  </div>
+  <div id="intro" class="layer"></div>
+  <div id="outro" class="layer"></div>
+</div>
+<script src="../shared/common.js"></script>
+<script>
+(function () {
+  const { $, seg, easeOut, clamp } = R;
+  let T = null, intro = null, cards = null;
+
+  const dustP = (() => { const r = R.rng(99), a = []; for (let i = 0; i < 70; i++) a.push({ x: r() * 1080, y: r() * 1920, s: 0.6 + r() * 2.4, v: 12 + r() * 40, ph: r() * 6.28, dr: 10 + r() * 30, tw: 0.5 + r() * 2 }); return a; })();
+  function dust(t, alpha) {
+    const c = $("dust").getContext("2d"); c.clearRect(0, 0, 1080, 1920);
+    if (alpha <= 0) return;
+    for (const p of dustP) {
+      const y = ((p.y - p.v * t) % 1920 + 1920) % 1920, x = p.x + Math.sin(t * 0.6 + p.ph) * p.dr;
+      const tw = 0.45 + 0.55 * Math.sin(t * p.tw + p.ph) ** 2, col = p.s > 2 ? "255,225,160" : "230,190,120";
+      const g = c.createRadialGradient(x, y, 0, x, y, p.s * 4);
+      g.addColorStop(0, `rgba(${col},${alpha * tw})`); g.addColorStop(1, `rgba(${col},0)`);
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, p.s * 4, 0, 6.283); c.fill();
+    }
+  }
+  const envAt = at => (T.env[Math.floor(at * 30)] || 0);
+  function wave(at, alpha) {
+    const c = $("wave").getContext("2d"); c.clearRect(0, 0, 1080, 70);
+    if (alpha <= 0) return;
+    const bars = 37, gap = 14, bw = 6;
+    for (let i = 0; i < bars; i++) {
+      const off = i - (bars - 1) / 2, d = Math.abs(off) / ((bars - 1) / 2);
+      const e = envAt(at - Math.abs(off) * 0.012);
+      const wob = 0.55 + 0.45 * Math.sin(at * 9 + i * 1.7) * Math.sin(at * 5.3 + i * 0.6);
+      const h = 6 + 52 * e * (1 - d * 0.75) * (0.6 + 0.4 * wob), x = 540 + off * gap - bw / 2;
+      const g = c.createLinearGradient(0, 35 - h / 2, 0, 35 + h / 2);
+      g.addColorStop(0, `rgba(255,236,180,${alpha})`); g.addColorStop(1, `rgba(201,151,63,${alpha})`);
+      c.fillStyle = g; c.beginPath(); c.roundRect(x, 35 - h / 2, bw, h, 3); c.fill();
+    }
+  }
+  const lineFx = (ln, at) => {
+    const k = easeOut(seg(at, ln.t - 0.15, ln.t + 0.35));
+    ln.el.style.opacity = k;
+    ln.el.style.transform = `translateY(${(1 - k) * 30}px) scale(${0.96 + 0.04 * k})`;
+    ln.el.style.filter = `blur(${(1 - k) * 8}px)`;
+    ln.words.forEach(w => (w.el.style.opacity = 0.38 + 0.62 * seg(at, w.t - 0.05, w.t + 0.2)));
+  };
+
+  window.loadTimeline = async function (timeline) {
+    T = JSON.parse(JSON.stringify(timeline));
+    intro = R.buildIntro($("intro"), T.channelName);
+    $("brandName").textContent = T.channelName;
+    cards = R.buildCards($("subs"), T.cards, { line: lineFx });
+    await document.fonts.ready;
+    await R.loadImages(["pose.jpg", "../shared/bg_intro.jpg"]);
+    intro.fit(); R.fit($("brandName"), 900); cards.fit(960);
+    window.renderAt(window.__t || 0);
+    return true;
+  };
+
+  window.renderAt = function (t) {
+    window.__t = t;
+    if (!T) return;
+    const INTRO = T.introDuration, AUDIO_END = INTRO + T.audioDuration;
+    intro.render(t, INTRO);
+    const at = t - INTRO, mainIn = INTRO <= 0.05 ? 1 : seg(t, INTRO - Math.min(0.6, INTRO * 0.3), INTRO + 0.2);
+    $("main").style.opacity = mainIn;
+    $("lanternGlow").style.opacity = 0.75 + 0.15 * Math.sin(t * 7.1) * Math.sin(t * 3.3) + 0.1 * Math.sin(t * 13);
+    dust(t, 0.7 * mainIn);
+    wave(at, 0.9 * seg(at, -0.3, 0) * (1 - seg(at, T.audioDuration, T.audioDuration + 0.5)));
+    cards.render(at);
+    $("progress").style.width = `${clamp((t - INTRO) / (T.total - INTRO)) * 1080}px`;
+    const kb = easeOut(seg(at, 0.2, 1));
+    $("brand").style.opacity = kb; $("brand").style.transform = `translateY(${(1 - kb) * -20}px)`;
+    $("outro").style.opacity = R.ease(seg(t, AUDIO_END + T.holdAfterAudio, AUDIO_END + T.holdAfterAudio + T.fadeDuration));
+  };
+  window.TEMPLATE_READY = true;
+})();
+</script>
+</body>
+</html>

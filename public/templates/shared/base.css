@@ -1,0 +1,30 @@
+@font-face { font-family: "Ruqaa"; src: url("fonts/ArefRuqaa-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Amiri"; src: url("fonts/Amiri-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Baloo"; src: url("fonts/Baloo.ttf"); font-weight: 400 800; }
+@font-face { font-family: "Lalezar"; src: url("fonts/Lalezar.ttf"); }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+.layer { position: absolute; inset: 0; }
+canvas { position: absolute; inset: 0; }
+.w { display: inline-block; }
+
+/* intro */
+#intro { z-index: 20; }
+.intro-bg { position: absolute; inset: -40px; background: url("bg_intro.jpg") center/cover; }
+.intro-vig { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 55% at 50% 46%, rgba(0,0,0,0) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.85) 100%); }
+.intro-title-wrap { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-72%); text-align: center; }
+.intro-title-box { position: relative; display: inline-block; }
+.intro-title, .intro-shine { font-family: "Ruqaa"; font-weight: 700; font-size: 230px; line-height: 1.55; display: inline-block; padding: 0 40px; white-space: nowrap; }
+.intro-title {
+  background: linear-gradient(180deg, #fff6d8 0%, #f3d58a 38%, #c9973f 62%, #f7e3a6 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.65)) drop-shadow(0 0 30px rgba(240,200,110,.35));
+}
+.intro-shine { position: absolute; inset: 0; color: transparent;
+  background: linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,.95) 50%, rgba(255,255,255,0) 60%);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; }
+.intro-flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, rgba(255,236,190,.9), rgba(255,220,150,0) 60%); opacity: 0; }
+
+#outro { z-index: 30; opacity: 0; background: #000; }

@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# استوديو الريلز (AI Reels Studio)
 
-## Getting Started
+محرر واستوديو عربي متكامل لتوليد مقاطع ريلز وشورتس تفاعلية (أحاديث نبوية وآثار وقصص) بتصميمين احترافيين:
+1. **تصميم المكتبة (Library)**: شخصية قارئة وترجمة متحركة مضيئة متزامنة مع الصوت كلمة بكلمة.
+2. **تصميم الشرح الكرتوني (Kids / 2D)**: شخصية كرتونية بحركات يد تفاعلية متزامنة، ورسومات وشارات توضيحية، وفقاعة نص منبثقة، وتأثيرات نجوم وألعاب نارية.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## المميزات الرئيسية
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **تزامن صوتي دقيق بالذكاء الاصطناعي**: محاذاة كل كلمة نطقاً وإضاءة (Karaoke-style) باستخدام Whisper.
+- **تشكيل آلي وتشكيل يدوي**: فحص الكلمات غير المشكولة وتشكيلها تلقائياً مع شريط لوحة حركات سريعة.
+- **حركات يد للشخصية الكرتونية**: 4 وضعيات لليدين (يشرح بيده، يشير لأعلى، يمسك كتاباً، يده على قلبه) مع توزيع ذكي حسب معنى كل جملة أو اختيار يدوي بنقرة واحدة.
+- **إدارة المشاهد والرسومات**: إمكانية إضافة رسمة توضيحية (إيموجي/أيقونة) لكل سطر أو إخفائها أو جعلها مستمرة («نفس السابقة»).
+- **معاينة حية وتصدير فيديو MP4**: تصدير الفيديو بجودة 1080×1920 بدقة 60 إطاراً في الثانية عبر Playwright و FFmpeg.
+- **واجهة عصرية بنمط Submagic / Descript**: هادئة وسهلة الاستخدام لكل منشئ محتوى.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## متطلبات التشغيل
 
-## Learn More
+- **Node.js**: الإصدار 18 فما فوق.
+- **Python**: الإصدار 3.10 فما فوق مع تثبيت `faster-whisper`:
+  ```bash
+  pip install faster-whisper
+  ```
+- **FFmpeg & FFprobe**: مضافان إلى متغيرات البيئة (PATH).
+- **Playwright**: لتصدير الفيديو:
+  ```bash
+  npx playwright install chromium
+  ```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## بدء التشغيل
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. تثبيت الحزم:
+   ```bash
+   npm install
+   ```
 
-## Deploy on Vercel
+2. تشغيل السيرفر المحلي:
+   ```bash
+   npm run dev
+   ```
+   أو النقر المزدوج على ملف `تشغيل_الاستوديو.bat`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. فتح المتصفح على:
+   ```
+   http://localhost:3000
+   ```

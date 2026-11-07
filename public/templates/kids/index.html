@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>template: kids</title>
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+  :root { --bg: #FFF3DC; --ink: #1d3557; --teal: #2a9d8f; --orange: #e76f51; }
+  #stage { background: var(--bg); }
+  #main { z-index: 10; background: var(--bg); }
+  #brand { position: absolute; top: 58px; left: 0; right: 0; text-align: center; font-family: "Ruqaa"; font-weight: 700;
+    font-size: 60px; line-height: 1.5; color: var(--teal); white-space: nowrap; }
+  #progress { position: absolute; left: 360px; right: 360px; top: 160px; height: 10px; border-radius: 99px; background: rgba(29,53,87,.08); }
+  #progressFill { position: absolute; right: 0; top: 0; bottom: 0; width: 0; border-radius: 99px; background: var(--teal); }
+
+  #iconStage { position: absolute; left: 0; right: 0; top: 165px; height: 630px; }
+  .icon { position: absolute; left: 50%; top: 50%; width: 640px; height: 640px; margin: -320px 0 0 -320px;
+    background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0; mix-blend-mode: multiply; }
+  #burst { position: absolute; left: 0; top: 0; width: 1080px; height: 1100px; }
+
+  #labels { position: absolute; left: 0; right: 0; top: 785px; height: 190px; }
+  .pill { position: absolute; left: 50%; white-space: nowrap; font-family: "Lalezar"; line-height: 1.5;
+    border-radius: 999px; padding: 6px 46px 0; opacity: 0; }
+  .pill.main { top: 0; font-size: 62px; color: #fff; background: var(--teal); box-shadow: 0 8px 0 #1f7a70; }
+  .pill.badge { top: 110px; font-size: 44px; color: var(--ink); background: #ffd59a; box-shadow: 0 6px 0 #e9b56a; }
+
+  #bubble { position: absolute; left: 44px; right: 44px; top: 985px; height: 395px; }
+  #bubbleBox { position: absolute; inset: 0; background: #fff; border-radius: 52px; border: 5px solid var(--ink); box-shadow: 0 12px 0 rgba(29,53,87,.12); }
+  #bubbleTail { position: absolute; right: 300px; bottom: -50px; width: 100px; height: 60px; }
+  #subs { position: absolute; left: 30px; right: 30px; top: 0; bottom: 0; }
+  .card { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; }
+  .hdr { font-family: "Baloo"; font-weight: 700; font-size: 44px; line-height: 1.55; color: var(--orange); white-space: nowrap; }
+  .ln { font-family: "Baloo"; font-weight: 800; font-size: 60px; line-height: 1.62; color: var(--ink); white-space: nowrap; }
+  .ftr { font-family: "Baloo"; font-weight: 600; font-size: 36px; color: #8a96a8; margin-top: 4px; white-space: nowrap; }
+
+  #shadow { position: absolute; left: 645px; top: 1862px; width: 320px; height: 40px; border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(29,53,87,.22), rgba(29,53,87,0) 70%); }
+  #char { position: absolute; width: 520px; height: 520px; left: 545px; top: 1375px; transform-origin: 50% 100%; }
+  .pose { position: absolute; inset: 0; background-size: contain; background-repeat: no-repeat; background-position: center bottom; opacity: 0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="main" class="layer">
+    <div id="brand"></div>
+    <div id="progress"><div id="progressFill"></div></div>
+    <div id="iconStage"></div>
+    <canvas id="burst" width="1080" height="1100"></canvas>
+    <div id="labels"></div>
+    <div id="shadow"></div>
+    <div id="char">
+      <div class="pose" data-pose="present" style="background-image:url('char_present.png')"></div>
+      <div class="pose" data-pose="point_up" style="background-image:url('char_point_up.png')"></div>
+      <div class="pose" data-pose="book" style="background-image:url('char_book.png')"></div>
+      <div class="pose" data-pose="heart" style="background-image:url('char_heart.png')"></div>
+    </div>
+    <div id="bubble">
+      <svg id="bubbleTail" viewBox="0 0 100 60"><path d="M4 0 L66 0 L96 54 Z" fill="#fff" stroke="#1d3557" stroke-width="5" stroke-linejoin="round"/><rect x="0" y="-8" width="100" height="10" fill="#fff"/></svg>
+      <div id="bubbleBox"></div>
+      <div id="subs"></div>
+    </div>
+  </div>
+  <div id="intro" class="layer"></div>
+  <div id="outro" class="layer"></div>
+</div>
+<script src="../shared/common.js"></script>
+<script>
+(function () {
+  const { $, seg, easeOut, backOut, lerp, clamp } = R;
+  let T = null, intro = null, cards = null, icons = {};
+  const poseEls = {};
+  document.querySelectorAll(".pose").forEach(el => (poseEls[el.dataset.pose] = el));
+
+  function buildScenes() {
+    $("iconStage").innerHTML = ""; $("labels").innerHTML = ""; icons = {};
+    T.scenes.forEach((s, i) => {
+      if (!icons[s.iconUrl]) {
+        const d = document.createElement("div"); d.className = "icon";
+        d.style.backgroundImage = `url("${s.iconUrl}")`; $("iconStage").appendChild(d); icons[s.iconUrl] = d;
+      }
+      if (s.label) { const p = document.createElement("div"); p.className = "pill main"; p.textContent = s.label; $("labels").appendChild(p); s._pill = p; }
+      if (s.badge) { const b = document.createElement("div"); b.className = "pill badge"; b.textContent = s.badge.text; $("labels").appendChild(b); s._badge = b; }
+      if (typeof s.end !== "number") s.end = T.scenes[i + 1] ? T.scenes[i + 1].t : 1e9;
+      const next = T.scenes[i + 1];
+      s.sameNext = next ? (next.iconUrl === s.iconUrl && Math.abs(next.t - s.end) < 0.05) : false;
+    });
+  }
+
+  function renderScenes(at, t) {
+    const op = {}, sc = {}, rot = {};
+    for (const k in icons) { op[k] = 0; sc[k] = 1; rot[k] = 0; }
+    T.scenes.forEach(s => {
+      const kin = seg(at, s.t, s.t + 0.55), kout = seg(at, s.end - 0.22, s.end);
+      const hide = el => el && (el.style.opacity = 0);
+      if (kin <= 0 || kout >= 1) { hide(s._pill); hide(s._badge); return; }
+      const o = Math.min(clamp(kin * 3), 1 - (s.sameNext ? 0 : kout));
+      if (o >= op[s.iconUrl]) {
+        op[s.iconUrl] = o;
+        sc[s.iconUrl] = (kin < 1 ? lerp(0.2, 1, backOut(kin)) : 1) * (s.sameNext ? 1 : lerp(1, 0.6, kout));
+        rot[s.iconUrl] = (1 - kin) * -14;
+      }
+      if (s._pill) {
+        const kp = seg(at, s.t + 0.15, s.t + 0.6);
+        s._pill.style.opacity = Math.min(clamp(kp * 2), 1 - kout);
+        s._pill.style.transform = `translateX(-50%) translateY(${(1 - easeOut(kp)) * 40}px) scale(${lerp(0.7, 1, backOut(kp))})`;
+      }
+      if (s._badge) {
+        const kb = seg(at, s.badge.t, s.badge.t + 0.45);
+        s._badge.style.opacity = Math.min(clamp(kb * 2), 1 - kout);
+        s._badge.style.transform = `translateX(-50%) scale(${lerp(0.5, 1, backOut(kb))})`;
+      }
+    });
+    for (const k in icons) {
+      icons[k].style.opacity = op[k];
+      icons[k].style.transform = `translateY(${Math.sin(t * 2.1) * 12}px) rotate(${rot[k] + Math.sin(t * 1.3) * 2}deg) scale(${sc[k]})`;
+    }
+    burst(at);
+  }
+
+  function star(c, x, y, r, rot) {
+    c.save(); c.translate(x, y); c.rotate(rot); c.beginPath();
+    for (let i = 0; i < 8; i++) { const rr = i % 2 ? r * 0.38 : r, a = (i * Math.PI) / 4; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    c.closePath(); c.fill(); c.restore();
+  }
+  function burst(at) {
+    const c = $("burst").getContext("2d"); c.clearRect(0, 0, 1080, 1100);
+    T.scenes.forEach((s, bi) => {
+      const bt = s.t + 0.08, k = seg(at, bt, bt + 0.9); if (k <= 0 || k >= 1) return;
+      const r = R.rng(1000 + bi * 17), cols = ["#f4a261", "#e9c46a", "#2a9d8f", "#e76f51"];
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * 6.283 + r() * 0.4, dist = lerp(120, 330 + r() * 80, easeOut(k));
+        c.globalAlpha = (1 - k) * 0.95; c.fillStyle = cols[i % 4];
+        star(c, 540 + Math.cos(a) * dist, 480 + Math.sin(a) * dist * 0.85, (10 + r() * 12) * (1 - k * 0.5), k * 3 + i);
+      }
+    });
+    c.globalAlpha = 1;
+  }
+
+  function renderChar(at, t) {
+    const P = T.poses.length ? T.poses : [{ t: 0, pose: "present" }];
+    let idx = 0; for (let i = 0; i < P.length; i++) if (at >= P[i].t) idx = i;
+    const k = seg(at, P[idx].t, P[idx].t + 0.18), cur = P[idx].pose, prev = idx > 0 ? P[idx - 1].pose : cur;
+    for (const n in poseEls) poseEls[n].style.opacity = n === cur ? (cur === prev ? 1 : k) : n === prev && k < 1 ? 1 - k : 0;
+    const pop = Math.sin(seg(at, P[idx].t, P[idx].t + 0.3) * Math.PI) * (idx > 0 ? 1 : 0), br = Math.sin(t * 2.4) * 0.012;
+    $("char").style.transform = `scale(${1 + br * 0.5 - pop * 0.03}, ${1 + br + pop * 0.05})`;
+  }
+
+  const lineFx = (ln, at) => {
+    const k = easeOut(seg(at, ln.t - 0.15, ln.t + 0.3));
+    ln.el.style.opacity = 0.35 + 0.65 * k;
+    ln.el.style.transform = `translateY(${(1 - k) * 14}px)`;
+    const base = ln.accent ? "#2a9d8f" : "#1d3557";
+    ln.words.forEach(w => {
+      const spoken = at >= w.t - 0.04, current = spoken && at < w.next - 0.02;
+      w.el.style.color = !spoken ? "#c3cddb" : current ? "#e76f51" : base;
+      w.el.style.transform = `translateY(${-Math.sin(seg(at, w.t - 0.04, w.t + 0.16) * Math.PI) * 8}px)`;
+    });
+  };
+
+  window.loadTimeline = async function (timeline) {
+    T = JSON.parse(JSON.stringify(timeline));
+    intro = R.buildIntro($("intro"), T.channelName);
+    $("brand").textContent = T.channelName;
+    buildScenes();
+    cards = R.buildCards($("subs"), T.cards, { line: lineFx });
+    await document.fonts.ready;
+    await R.loadImages(["../shared/bg_intro.jpg", "char_present.png", "char_point_up.png", "char_book.png", "char_heart.png", ...T.scenes.map(s => s.iconUrl)]);
+    intro.fit(); R.fit($("brand"), 900); cards.fit(900);
+    T.scenes.forEach(s => [s._pill, s._badge].forEach(el => el && R.fit(el, 1000)));
+    window.renderAt(window.__t || 0);
+    return true;
+  };
+
+  window.renderAt = function (t) {
+    window.__t = t;
+    if (!T) return;
+    const INTRO = T.introDuration, AUDIO_END = INTRO + T.audioDuration;
+    intro.render(t, INTRO);
+    const at = t - INTRO;
+    $("main").style.opacity = INTRO <= 0.05 ? 1 : seg(t, INTRO - Math.min(0.6, INTRO * 0.3), INTRO + 0.2);
+    const kb = seg(at, -0.25, 0.25);
+    $("bubble").style.transformOrigin = "75% 100%";
+    $("bubble").style.transform = `scale(${lerp(0.6, 1, backOut(kb))})`;
+    $("bubble").style.opacity = clamp(kb * 2);
+    const kc = clamp(seg(at, -0.45, 0.15) * 2);
+    $("char").style.opacity = kc; $("shadow").style.opacity = kc;
+    renderChar(Math.max(0, at), t);
+    renderScenes(at, t);
+    cards.render(at);
+    $("progressFill").style.width = `${clamp(at / T.audioDuration) * 100}%`;
+    $("outro").style.opacity = R.ease(seg(t, AUDIO_END + T.holdAfterAudio, AUDIO_END + T.holdAfterAudio + T.fadeDuration));
+  };
+  window.TEMPLATE_READY = true;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+[
+ {
+  "id": "icon_all_good",
+  "name": "كل الخير",
+  "file": "icon_all_good.jpg",
+  "createdAt": "2026-11-07T11:00:00.000Z"
+ },
+ {
+  "id": "icon_book",
+  "name": "كتاب حديث",
+  "file": "icon_book.jpg",
+  "createdAt": "2026-11-07T11:00:00.000Z"
+ },
+ {
+  "id": "icon_finger_up",
+  "name": "إصبع التوحيد",
+  "file": "icon_finger_up.jpg",
+  "createdAt": "2026-11-07T11:00:00.000Z"
+ },
+ {
+  "id": "icon_gift_heart",
+  "name": "هدية وقلب",
+  "file": "icon_gift_heart.jpg",
+  "createdAt": "2026-11-07T11:00:00.000Z"
+ },
+ {
+  "id": "icon_hands_receive",
+  "name": "يدان تدعوان",
+  "file": "icon_hands_receive.jpg",
+  "createdAt": "2026-11-07T11:00:00.000Z"
+ },
+ {
+  "id": "icon_heart_glow",
+  "name": "قلب منير",
+  "file": "icon_heart_glow.jpg",
+  "createdAt": "2026-11-07T11:00:00.000Z"
+ }
+]
