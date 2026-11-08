@@ -53,6 +53,10 @@
       <div class="pose" data-pose="point_up" style="background-image:url('char_point_up.png')"></div>
       <div class="pose" data-pose="book" style="background-image:url('char_book.png')"></div>
       <div class="pose" data-pose="heart" style="background-image:url('char_heart.png')"></div>
+      <div class="pose" data-pose="dua" style="background-image:url('char_dua.png')"></div>
+      <div class="pose" data-pose="stop" style="background-image:url('char_stop.png')"></div>
+      <div class="pose" data-pose="welcome" style="background-image:url('char_welcome.png')"></div>
+      <div class="pose" data-pose="think" style="background-image:url('char_think.png')"></div>
     </div>
     <div id="bubble">
       <svg id="bubbleTail" viewBox="0 0 100 60"><path d="M4 0 L66 0 L96 54 Z" fill="#fff" stroke="#1d3557" stroke-width="5" stroke-linejoin="round"/><rect x="0" y="-8" width="100" height="10" fill="#fff"/></svg>
@@ -164,7 +168,18 @@
     buildScenes();
     cards = R.buildCards($("subs"), T.cards, { line: lineFx });
     await document.fonts.ready;
-    await R.loadImages(["../shared/bg_intro.jpg", "char_present.png", "char_point_up.png", "char_book.png", "char_heart.png", ...T.scenes.map(s => s.iconUrl)]);
+    await R.loadImages([
+      "../shared/bg_intro.jpg",
+      "char_present.png",
+      "char_point_up.png",
+      "char_book.png",
+      "char_heart.png",
+      "char_dua.png",
+      "char_stop.png",
+      "char_welcome.png",
+      "char_think.png",
+      ...T.scenes.map(s => s.iconUrl),
+    ]);
     intro.fit(); R.fit($("brand"), 900); cards.fit(900);
     T.scenes.forEach(s => [s._pill, s._badge].forEach(el => el && R.fit(el, 1000)));
     window.renderAt(window.__t || 0);

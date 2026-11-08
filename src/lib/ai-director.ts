@@ -2,12 +2,12 @@ import "server-only";
 import { normalize } from "./arabic";
 import { inferPose } from "./compile";
 import { vocalizeText } from "./tashkeel";
-import type { Asset, Card, PoseId } from "./types";
+import { POSES, type Asset, type Card, type PoseId } from "./types";
 
 const CLOUD_AI_URL = process.env.AI_API_URL || "https://text.pollinations.ai/openai";
 const CLOUD_AI_MODEL = process.env.AI_MODEL || "openai";
 
-const VALID_POSES = new Set<string>(["present", "point_up", "book", "heart"]);
+const VALID_POSES = new Set<string>(POSES.map(p => p.id));
 
 /** Check if an asset name looks like a raw filename (numbers, English-only, or generic "صورة"). */
 function needsBetterName(name: string): boolean {
@@ -164,21 +164,18 @@ export async function aiDirectProject(cards: Card[], assets: Asset[]): Promise<{
       "3. حركة اليد (p): لا تغير حركة اليد في كل سطر! اختر حركة يد في بداية الشريحة أو المعنى، واجعل الأسطر التي تليها (p: 'same') حتى ينتقل الكلام لمعنى جديد تماماً.",
       "4. التمييز اللوني (acc): اجعله true فقط في سطر واحد أو سطرين على الأكثر في الفيديو كله (خاتمة الحديث أو موضع الشاهد الرئيسي)، والباقي false.",
       "",
-      "حركات اليد المتاحة (p):",
-      "- point_up: يشير لأعلى (عند ذكر الله تعالى، قال الله، القسم بالله)",
-      "- book: يمسك كتاباً (عند ذكر الراوي، رواه، مصنف، الطبري، في تفسيرها)",
-      "- heart: يده على قلبه (عند ذكر المحبة، الإحسان، يحب المحسنين، حسن الظن بالله)",
-      "- present: يشرح بيده (للشرح العام والعطاء)",
-      "- same: استمرار نفس حركة اليد السابقة (استخدمها في أغلب الأسطر المتتالية)",
+      "حركات اليد المتاحة للشخصية (p) — اختر الحركة الأدق للمعنى:",
+      ...POSES.map(p => `- ${p.id}: ${p.name} (${p.description})`),
+      "- same: استمرار نفس حركة اليد السابقة بدون تغيير (استخدمها في الأسطر المتتالية داخل نفس الفكرة)",
       "",
-      "قائمة الرسومات المتاحة في المكتبة (اختر فقط من هذه الـ id عند وجود تطابق قوي):",
+      "قائمة الرسومات التوضيحية المتاحة في المكتبة (لاحظ الفرق الدقيق في whenToUse لكل رسمة، واختر فقط عند وجود تطابق واضح وقوي):",
       JSON.stringify(iconCatalog),
       "",
       "شرائح وأسطر الفيديو:",
       JSON.stringify(cardStructure),
       "",
       'أرجع JSON فقط يحتوي على المفتاح "lines" لكل الأسطر بالترتيب:',
-      '{"lines":[{"i":"معرف السطر","p":"point_up|book|heart|present|same","s":"icon|same|none","ic":"معرف الرسمة أو فارغ","lbl":"عنوان مختصر للرسمة أو فارغ","acc":false}]}',
+      '{"lines":[{"i":"معرف السطر","p":"present|point_up|book|heart|dua|stop|welcome|think|same","s":"icon|same|none","ic":"معرف الرسمة أو فارغ","lbl":"عنوان مختصر للرسمة أو فارغ","acc":false}]}',
     ].join("\n");
 
     const res = await fetch(CLOUD_AI_URL, {

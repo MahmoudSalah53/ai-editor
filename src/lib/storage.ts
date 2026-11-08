@@ -1,5 +1,5 @@
 import "server-only";
-import { promises as fs, existsSync, mkdirSync, readdirSync, copyFileSync, writeFileSync } from "node:fs";
+import { promises as fs, existsSync, mkdirSync, readdirSync, copyFileSync, writeFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { uid } from "./compile";
 import type { Asset, Project, RenderState, Settings, TemplateId, TranscriptState } from "./types";
@@ -10,22 +10,42 @@ export const DATA_DIR = process.env.STUDIO_DATA_DIR || path.join(ROOT, "data");
 export const PROJECTS_DIR = path.join(DATA_DIR, "projects");
 export const ASSETS_DIR = path.join(DATA_DIR, "assets");
 
-const SEED_ICONS: Record<string, string> = {
-  icon_book: "كتاب حديث",
+export const SEED_ICONS: Record<string, string> = {
+  icon_book: "كتاب ومصنف",
   icon_finger_up: "إصبع التوحيد",
-  icon_gift_heart: "هدية وقلب",
-  icon_heart_glow: "قلب منير",
-  icon_hands_receive: "يدان تدعوان",
-  icon_all_good: "كل الخير",
+  icon_gift_heart: "هدية وعطاء",
+  icon_heart_glow: "قلب مطمئن بالإيمان",
+  icon_hands_receive: "يدان مرفوعتان للدعاء",
+  icon_all_good: "البركة وكل الخير",
+  icon_mosque: "مسجد ومنارة",
+  icon_scale: "ميزان العدل والحساب",
+  icon_shield: "درع الوقاية والحفظ",
+  icon_coins: "صدقة وإنفاق المال",
+  icon_lantern: "فانوس النور والهداية",
+  icon_paradise: "نخلة وأنهار الجنة",
+  icon_warning: "تحذير من التهلكة",
+  icon_kaaba: "الكعبة المشرفة",
+  icon_time: "ساعة رملية والوقت",
+  icon_mercy_rain: "غيث الرحمة والفرج",
 };
 
 export const SEED_DESCRIPTIONS: Record<string, string> = {
-  icon_book: "عند ذكر رواية الحديث، المصنف، الكتاب، الراوي، التفسير، القرآن، العلم، قال الطبري أو ابن أبي شيبة",
-  icon_finger_up: "عند ذكر الله تعالى، القسم بالله (والذي لا إله غيره)، التوحيد، العقيدة، قال الله تعالى",
-  icon_gift_heart: "عند ذكر العطاء، ما أعطي عبد، النعمة، الفضل، الإحسان، الإنفاق في سبيل الله، الصدقة",
-  icon_heart_glow: "عند ذكر حسن الظن بالله، القلب، الإيمان، المحبة، إن الله يحب المحسنين، اليقين",
-  icon_hands_receive: "عند ذكر الدعاء، الاستجابة، إلا أعطاه الله ذلك، الرجاء، الطلب من الله",
-  icon_all_good: "عند ذكر أن كل الخير بيد الله، البركة، الفلاح، النعيم، يبركم، عاقبة الإحسان",
+  icon_book: "يختار فقط عند ذكر: رواية الحديث، المصنف، الكتاب، الراوي، في تفسيرها، قال الطبري، ابن أبي شيبة، البخاري، مسلم، قراءة القرآن",
+  icon_finger_up: "يختار فقط عند ذكر: الله تعالى، القسم بالله (والذي لا إله غيره)، التوحيد، العقيدة، الإخلاص لله وحده، قال الله تعالى",
+  icon_gift_heart: "يختار فقط عند ذكر: هدية أو عطاء من الله (ما أعطي عبد عطاءً)، الفضل، الهدية، التهادي، الإكرام",
+  icon_heart_glow: "يختار فقط عند ذكر: حسن الظن بالله، صلاح القلب، الإيمان، محبة الله (إن الله يحب المحسنين)، الطمأنينة، اليقين",
+  icon_hands_receive: "يختار فقط عند ذكر: الدعاء، سؤال الله، الاستجابة (إلا أعطاه الله ذلك)، الرجاء، التضرع، اللهم",
+  icon_all_good: "يختار فقط عند ذكر: اجتماع الخيرات (إن الخير كله بيديه)، البركة الشاملة، يبركم، صلاح الدنيا والآخرة",
+  icon_mosque: "يختار فقط عند ذكر: المسجد، الصلاة، الجماعة، بيوت الله، الأذان، الركوع والسجود، العبادة",
+  icon_scale: "يختار فقط عند ذكر: العدل، الميزان، الحساب يوم القيامة، القسط، وزن الأعمال، الحسنات والسيئات، الحق",
+  icon_shield: "يختار فقط عند ذكر: الوقاية، الحفظ، التحصين، الأمان، النجاة من البلاء، التوكل، الصبر عند الشدائد",
+  icon_coins: "يختار فقط عند ذكر: الإنفاق في سبيل الله (وأنفقوا في سبيل الله)، الصدقة، الزكاة، المال، الكرم المالي، إطعام المسكين",
+  icon_lantern: "يختار فقط عند ذكر: النور، الهداية، الحكمة، العلم النافع، البصيرة، إضاءة الطريق، شهر رمضان",
+  icon_paradise: "يختار فقط عند ذكر: الجنة، دار النعيم، الثواب العظيم، الأجر في الآخرة، أنهار الجنة، الفوز الكبير",
+  icon_warning: "يختار فقط عند ذكر: التحذير، النهي (ولا تلقوا بأيديكم إلى التهلكة)، الخطر، الهلاك، المعاصي، اليأس والقنوط",
+  icon_kaaba: "يختار فقط عند ذكر: الكعبة المشرفة، الحج، العمرة، مكة، القبلة، البيت الحرام، الطواف",
+  icon_time: "يختار فقط عند ذكر: الوقت، العمر، مرور الأيام، الصبر الطويل، المبادرة قبل الفوات، الدنيا الفانية",
+  icon_mercy_rain: "يختار فقط عند ذكر: رحمة الله، الغيث، المطر، الفرج بعد الشدة، الرزق من السماء، إحياء الأرض والقلوب",
 };
 
 let ready = false;
@@ -33,17 +53,32 @@ function ensure() {
   if (ready) return;
   for (const d of [DATA_DIR, PROJECTS_DIR, ASSETS_DIR]) if (!existsSync(d)) mkdirSync(d, { recursive: true });
   const index = path.join(ASSETS_DIR, "assets.json");
-  if (!existsSync(index)) {
-    const seedDir = path.join(ROOT, "seed", "icons");
-    const assets: Asset[] = [];
-    if (existsSync(seedDir)) {
-      for (const f of readdirSync(seedDir)) {
-        const id = path.parse(f).name;
-        copyFileSync(path.join(seedDir, f), path.join(ASSETS_DIR, f));
+  const seedDir = path.join(ROOT, "seed", "icons");
+  let assets: Asset[] = [];
+  if (existsSync(index)) {
+    try { assets = JSON.parse(readFileSync(index, "utf8")); } catch { assets = []; }
+  }
+  if (existsSync(seedDir)) {
+    const existingIds = new Set(assets.map(a => a.id));
+    let changed = !existsSync(index);
+    for (const f of readdirSync(seedDir)) {
+      const id = path.parse(f).name;
+      const dest = path.join(ASSETS_DIR, f);
+      if (!existsSync(dest)) copyFileSync(path.join(seedDir, f), dest);
+      if (!existingIds.has(id)) {
         assets.push({ id, name: SEED_ICONS[id] ?? id, description: SEED_DESCRIPTIONS[id], file: f, createdAt: new Date().toISOString() });
+        changed = true;
+      } else {
+        // Update seed name/description if it's a built-in seed icon
+        const item = assets.find(a => a.id === id);
+        if (item && SEED_DESCRIPTIONS[id] && item.description !== SEED_DESCRIPTIONS[id]) {
+          item.name = SEED_ICONS[id] ?? item.name;
+          item.description = SEED_DESCRIPTIONS[id];
+          changed = true;
+        }
       }
     }
-    writeFileSync(index, JSON.stringify(assets, null, 1));
+    if (changed) writeFileSync(index, JSON.stringify(assets, null, 1));
   }
   ready = true;
 }

@@ -35,6 +35,10 @@ const POSE_THUMBS: Record<PoseId, string> = {
   point_up: "/templates/kids/char_point_up.png",
   book: "/templates/kids/char_book.png",
   heart: "/templates/kids/char_heart.png",
+  dua: "/templates/kids/char_dua.png",
+  stop: "/templates/kids/char_stop.png",
+  welcome: "/templates/kids/char_welcome.png",
+  think: "/templates/kids/char_think.png",
 };
 
 const HARAKAT: Array<{ char: string; label: string; display: string }> = [
@@ -731,7 +735,10 @@ const LineRow = memo(function LineRow({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={POSE_THUMBS[p.id]} alt="" className="size-10 shrink-0 rounded-lg bg-[#FFF3DC] object-contain" />
-                  <span className="text-xs">{p.name}</span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium">{p.name}</div>
+                    <div className="truncate text-[10px] font-normal text-stone-400" title={p.description}>{p.description}</div>
+                  </div>
                 </button>
               );
             })}

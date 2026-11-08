@@ -1,7 +1,15 @@
 // Shared data model (used by both the browser editor and the server).
 
 export type TemplateId = "library" | "kids";
-export type PoseId = "present" | "point_up" | "book" | "heart";
+export type PoseId =
+  | "present"
+  | "point_up"
+  | "book"
+  | "heart"
+  | "dua"
+  | "stop"
+  | "welcome"
+  | "think";
 
 export interface TimedWord { w: string; s: number; e: number }
 
@@ -92,11 +100,15 @@ export const TEMPLATES: Record<TemplateId, { name: string; description: string; 
   },
 };
 
-export const POSES: { id: PoseId; name: string }[] = [
-  { id: "present", name: "يشرح بيده" },
-  { id: "point_up", name: "يشير لأعلى" },
-  { id: "book", name: "يمسك كتابًا" },
-  { id: "heart", name: "يده على قلبه" },
+export const POSES: { id: PoseId; name: string; description: string }[] = [
+  { id: "present", name: "يشرح بيده", description: "للشرح العام وتقديم الكلام والبيان" },
+  { id: "point_up", name: "يشير لأعلى", description: "عند ذكر الله تعالى، التوحيد، القسم بالله، علو الله" },
+  { id: "book", name: "يمسك كتابًا", description: "عند ذكر الراوي، المصنف، التفسير، القرآن، الحديث، العلم" },
+  { id: "heart", name: "يده على قلبه", description: "عند ذكر القلب، الإيمان، المحبة، الإحسان، حسن الظن، الإخلاص" },
+  { id: "dua", name: "يرفع يديه للدعاء", description: "عند الدعاء، سؤال الله، اللهم، الرجاء، الاستغفار، الاستجابة" },
+  { id: "stop", name: "يحذر / ينهى بيده", description: "عند النهي، التحذير، لا تلقوا بأيديكم إلى التهلكة، الخطر، المعاصي" },
+  { id: "welcome", name: "يفتح يديه ترحيبًا", description: "عند ذكر السعة، شمول الرحمة، الكرم، العطاء الواسع، كل الخير، البشارة" },
+  { id: "think", name: "يتأمل / يتفكر", description: "عند التدبر، التفكر، الحكمة، التساؤل، المعنى العميق، الفهم" },
 ];
 
 /** Payload consumed by the HTML templates (public/templates/*). */

@@ -254,10 +254,18 @@ export function inferPose(text: string, isFirstInCard: boolean, prevPose?: PoseI
   let candidate: PoseId | undefined;
   if (/(روي|رواه|مصنف|كتاب|طبري|بخاري|مسلم|تفسير|حديث|قران)/.test(bare)) {
     candidate = "book";
-  } else if (/(قال الله|والذي|لا اله|تعالي|سبحانه|السماء|ربنا)/.test(bare)) {
+  } else if (/(لا تلقوا|تهلكه|تحذير|حرام|نهي|لا تقنطوا|خطر|اياكم|معصيه|ذنوب)/.test(bare)) {
+    candidate = "stop";
+  } else if (/(دعاء|اللهم|اسال|استغفر|اعطاه|يارب|رجاء|تضرع)/.test(bare)) {
+    candidate = "dua";
+  } else if (/(قال الله|والذي|لا اله|تعالي|سبحانه|السماء|ربنا|توحيد)/.test(bare)) {
     candidate = "point_up";
-  } else if (/(يحب|قلب|ظن|مؤمن|احسنوا|محسنين|رحم|نيه|صدر)/.test(bare)) {
+  } else if (/(يحب|قلب|ظن|مؤمن|احسنوا|محسنين|نيه|صدر|اخلاص)/.test(bare)) {
     candidate = "heart";
+  } else if (/(الخير كله|عطاء|انفقوا|سعه|رحمه|يبركم|كرم|بركه|فضل)/.test(bare)) {
+    candidate = "welcome";
+  } else if (/(تفكر|تدبر|حكمه|معني|تامل|عقل|كيف|لماذا)/.test(bare)) {
+    candidate = "think";
   } else if (isFirstInCard) {
     candidate = "present";
   }
