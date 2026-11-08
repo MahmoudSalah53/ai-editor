@@ -86,8 +86,8 @@ export const TEMPLATES: Record<TemplateId, { name: string; description: string; 
     thumb: "/templates/library/thumb.jpg",
   },
   kids: {
-    name: "الشرح الكرتوني",
-    description: "خلفية بلون واحد، شخصية صغيرة تشرح، ورسومات توضيحية مناسبة للأطفال.",
+    name: "شرح كرتوني",
+    description: "خلفية بلون موحد، شخصية تشرح بحركات متفاعلة، ورسومات توضيحية جذابة.",
     thumb: "/templates/kids/thumb.jpg",
   },
 };

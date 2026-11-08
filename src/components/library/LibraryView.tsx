@@ -140,7 +140,7 @@ export function LibraryView({ initialAssets }: { initialAssets: AssetItem[] }) {
         <div>
           <h1 className="text-xl font-bold sm:text-2xl">مكتبة الرسومات</h1>
           <p className="mt-0.5 text-sm text-stone-500">
-            الرسومات التوضيحية المستخدمة في تصميم «الشرح الكرتوني» ({assets.length} رسمة)
+            الرسومات التوضيحية المستخدمة في تصميم «شرح كرتوني» ({assets.length} رسمة)
           </p>
         </div>
 
